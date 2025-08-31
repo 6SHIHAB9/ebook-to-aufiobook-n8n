@@ -1,0 +1,472 @@
+{
+  "name": "EBOOK",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/tmp/audio {{$itemIndex}}.mp3",
+        "dataPropertyName": "=audio {{ $itemIndex }}",
+        "options": {}
+      },
+      "id": "532fdeea-553c-451d-995f-2a41f166578c",
+      "name": "Save Audio Chucks",
+      "type": "n8n-nodes-base.readWriteFile",
+      "position": [
+        560,
+        -144
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * This Code node will:\n * 1. Gather all file paths from the incoming items (assuming each item has `item.json.filePath`).\n * 2. Build a single text string, each line in FFmpeg concat format: `file '/path/to/audio.mp3'`\n * 3. Convert that text to binary (Base64) so the next node (\"Write Binary File\") can save it as `concat_list.txt`.\n */\n\nconst items = $input.all();\n\n// Build the concat list\nlet concatListText = '';\n\nitems.forEach((item, index) => {\n  let filePath;\n\n\n  // Use only fileName for the rest\n    filePath = item.json.fileName;\n\n\n  if (filePath) {\n    concatListText += `file '${filePath}'\\n`;\n  }\n});\n\n// Convert the text to a Buffer, then to Base64\nconst buffer = Buffer.from(concatListText, 'utf-8');\nconst base64Data = buffer.toString('base64');\n\n// Return a single item containing the binary data\nreturn [\n  {\n    json: {},\n    binary: {\n      data: {\n        data: base64Data,\n        mimeType: 'text/plain',\n        fileName: 'concat_list.txt'\n      }\n    }\n  }\n];"
+      },
+      "id": "01f773ab-9cd8-479f-91fd-ad9b15f9e6ee",
+      "name": "Generate `concat_list.txt`",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        256,
+        48
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "/tmp/concat_list.txt",
+        "options": {}
+      },
+      "id": "ec2eb174-d1c9-41e9-a991-e0a7c167023d",
+      "name": "Save concat_list",
+      "type": "n8n-nodes-base.readWriteFile",
+      "position": [
+        592,
+        48
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "command": "ffmpeg -y -f concat -safe 0 -i /tmp/concat_list.txt \\\n-c copy /tmp/final_merged.mp3\n\n\n"
+      },
+      "id": "9eb0bb8b-cba8-4b00-a0f4-c8eab32f0599",
+      "name": "Join audio chucks and delete all files",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [
+        256,
+        256
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fileSelector": "/tmp/final_merged.mp3",
+        "options": {}
+      },
+      "id": "de8c62f2-2a3c-4c76-a342-9448e31147bc",
+      "name": "read final_merged",
+      "type": "n8n-nodes-base.readWriteFile",
+      "position": [
+        592,
+        256
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## EBOOK EXTRACTION MODULE",
+        "height": 288,
+        "width": 560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1520,
+        -48
+      ],
+      "typeVersion": 1,
+      "id": "3f1c4cd0-8d75-4d0d-bae3-4789383cb084",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## EBOOK TO AUDIOBOOK CONVERSION MODULE",
+        "height": 512,
+        "width": 704,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -768,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "f4fbf2fb-28e6-49f2-b6f5-03571c272401",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## AUDIO MERGING MODULE",
+        "height": 640,
+        "width": 656,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        144,
+        -224
+      ],
+      "typeVersion": 1,
+      "id": "7f99b00d-89d9-4c02-accc-cd64d13ef371",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## UPLOADS THE EBOOK TO DRIVE.",
+        "height": 240,
+        "width": 288,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        960,
+        -48
+      ],
+      "typeVersion": 1,
+      "id": "02967802-141c-40ca-a16c-bfacd137188c",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "formTitle": "Ebook to Audiobook",
+        "formDescription": "Upload your Ebook here",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "UPLOAD",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -1472,
+        48
+      ],
+      "id": "cef7ee10-2c33-4f5d-ba62-1e6eef671dad",
+      "name": "FORM",
+      "webhookId": "d95584f4-a526-4218-8f75-2b17272ebba9"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "UPLOAD",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -1296,
+        48
+      ],
+      "id": "90a33b95-ba6e-4d25-9e55-8c100efb66b8",
+      "name": "EXTRACT TEXT"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = $input.first().json.text || \"\";\n\n// Clean function for JSON/TTS\nfunction cleanText(str) {\n    return str\n        .replace(/\\\\\\\\n/g, \" \")\n        .replace(/\\\\n/g, \" \")\n        .replace(/\\\\/g, \"\\\\\\\\\")\n        .replace(/\"/g, '\\\\\"')\n        .replace(/(\\r\\n|\\r|\\n)+/g, \" \")\n        .replace(/\\s+/g, \" \")\n        .trim();\n}\n\nconst text = cleanText(rawText);\n\nconst sentences = text.split(/(?<=[.!?])\\s+/).filter(Boolean);\n\nconst maxChars = 500;\nlet parts = [];\nlet chunk = \"\";\n\nfor (let sentence of sentences) {\n    if (sentence.length > maxChars) {\n        // Split very long sentence into smaller pieces\n        let start = 0;\n        while (start < sentence.length) {\n            const sub = sentence.slice(start, start + maxChars);\n            if (chunk) parts.push(chunk);\n            parts.push(sub);\n            chunk = \"\";\n            start += maxChars;\n        }\n        continue;\n    }\n\n    const space = chunk ? \" \" : \"\";\n    if ((chunk + space + sentence).length > maxChars) {\n        if (chunk) parts.push(chunk);\n        chunk = sentence;\n    } else {\n        chunk += space + sentence;\n    }\n}\n\nif (chunk) parts.push(chunk);\nconst result = parts.map((p, i) => ({ order: i + 1, text: p }));\n\nreturn result.map(r => ({ json: r }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        48
+      ],
+      "id": "0af2bcef-e4cd-4be3-8482-a4aa269a0c41",
+      "name": "SPLITS THE TEXT ACCORGING TO RULES"
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -704,
+        48
+      ],
+      "id": "5a796bc5-54d3-4bd6-b276-f2f83e5006c8",
+      "name": "Loop Over Text chunks (5) at a time"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        112
+      ],
+      "id": "6bab8b2a-5a97-4798-969d-460a9bd19075",
+      "name": "WAITS FOR 5 SECONDS",
+      "webhookId": "865809f7-7aea-40bd-9a0e-104a2ee18d73"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -480,
+        -96
+      ],
+      "id": "9910fad7-87d4-42cd-b145-47354840df32",
+      "name": "CONVERTS URL TO AUDIO FILES"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item, index) => {\n  // Make a new item\n  const newItem = { json: {}, binary: {} };\n\n  // Copy the JSON data if you have any\n  newItem.json = { ...item.json };\n\n  // Loop through all binary properties\n  for (let key in item.binary) {\n    // Rename the binary key\n    const newKey = `audio ${index}`;\n\n    // Copy the binary data\n    newItem.binary[newKey] = { ...item.binary[key] };\n\n    // Rename the file itself\n    newItem.binary[newKey].fileName = `${newKey}.mp3`; // change extension if needed\n  }\n\n  return newItem;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        -144
+      ],
+      "id": "ea90475f-8f2f-4e6f-a7b3-93baddcacd25",
+      "name": "GIVES INDEXES TO AUDIO FILES"
+    },
+    {
+      "parameters": {
+        "name": "audiobook.mp3",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "root",
+          "mode": "list",
+          "cachedResultName": "/ (Root folder)",
+          "cachedResultUrl": "https://drive.google.com/drive"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1056,
+        32
+      ],
+      "id": "89ca4df8-f545-4510-9e67-c55bbf50ff6f",
+      "name": "Uploads Ebook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/models/minimax/speech-02-hd/predictions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer "
+            },
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": {\n    \"text\": \"{{ $json.text }}\",\n    \"pitch\": 0,\n    \"speed\": 1,\n    \"volume\": 1,\n    \"bitrate\": 128000,\n    \"channel\": \"mono\",\n    \"emotion\": \"happy\",\n    \"voice_id\": \"Friendly_Person\",\n    \"sample_rate\": 32000,\n    \"language_boost\": \"English\",\n    \"english_normalization\": true\n  }\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -448,
+        112
+      ],
+      "id": "c0d036d0-494f-4347-b573-53752c313100",
+      "name": "MINIMAX TTS"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Save Audio Chucks": {
+      "main": [
+        [
+          {
+            "node": "Generate `concat_list.txt`",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate `concat_list.txt`": {
+      "main": [
+        [
+          {
+            "node": "Save concat_list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save concat_list": {
+      "main": [
+        [
+          {
+            "node": "Join audio chucks and delete all files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Join audio chucks and delete all files": {
+      "main": [
+        [
+          {
+            "node": "read final_merged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read final_merged": {
+      "main": [
+        [
+          {
+            "node": "Uploads Ebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FORM": {
+      "main": [
+        [
+          {
+            "node": "EXTRACT TEXT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXTRACT TEXT": {
+      "main": [
+        [
+          {
+            "node": "SPLITS THE TEXT ACCORGING TO RULES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SPLITS THE TEXT ACCORGING TO RULES": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Text chunks (5) at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Text chunks (5) at a time": {
+      "main": [
+        [
+          {
+            "node": "CONVERTS URL TO AUDIO FILES",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MINIMAX TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WAITS FOR 5 SECONDS": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Text chunks (5) at a time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CONVERTS URL TO AUDIO FILES": {
+      "main": [
+        [
+          {
+            "node": "GIVES INDEXES TO AUDIO FILES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GIVES INDEXES TO AUDIO FILES": {
+      "main": [
+        [
+          {
+            "node": "Save Audio Chucks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MINIMAX TTS": {
+      "main": [
+        [
+          {
+            "node": "WAITS FOR 5 SECONDS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0ceb0feb-33cf-4045-8c08-4c02a89ac3e8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e6e84a076666caa16c0fe4bac980de5ebda24786d4bf6e923495ac2833da2059"
+  },
+  "id": "u7zquczOtgPRlcz5",
+  "tags": []
+}
